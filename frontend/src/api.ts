@@ -1,4 +1,6 @@
-// AI-GENERATED: simple API client for sessions
+//  API client for sessions/Responsibility: Handle backend communication.
+//Returns data in JSON./Responsibility: Handle backend communication.
+//Connection: Called inside SessionList (and later in SessionDetails).
 
 export type Session = {
   id: number;
@@ -19,11 +21,29 @@ export async function getSessions(): Promise<Session[]> {
   return res.json();
 }
 
-// (Optional for next step) Fetch single session by id:
+// fetch single session by id
 export async function getSessionById(id: string | number): Promise<Session> {
   const res = await fetch(`${BASE_URL}/sessions/${id}`);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch session ${id}: ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`Failed to fetch session ${id}: ${res.status}`);
   return res.json();
 }
+
+//join a session, returns { attendance_code, ... }
+export async function joinSession(sessionId: string | number, attendee_name: string) {
+  const res = await fetch(`${BASE_URL}/attendance/${sessionId}/join`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ attendee_name }),
+  });
+  if (!res.ok) throw new Error(`Failed to join session: ${res.status}`);
+  return res.json();
+}
+
+//get attendee count for a session → { count: number }
+export async function getAttendeeCount(sessionId: string | number): Promise<{ count: number }> {
+  const res = await fetch(`${BASE_URL}/attendance/${sessionId}/count`);
+  if (!res.ok) throw new Error(`Failed to fetch count: ${res.status}`);
+  return res.json();
+}
+
+

@@ -1,17 +1,18 @@
-// AI-GENERATED: SessionList — fetch & display public sessions
+//esponsibility: Show all sessions.
+//list all sessions, link to details,Connection: Uses api.ts for data + React Router’s <Link> to navigate.
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getSessions, type Session } from "../api";
 
 export default function SessionList() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);      // ai-gen marker
+  const [sessions, setSessions] = useState<Session[]>([]);//Manages loading/error states with useState.
+  const [loading, setLoading] = useState(true);      //  marker
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await getSessions();
+        const data = await getSessions();//Fetches data from the backend using getSessions() (from api.ts).
         setSessions(data);
       } catch (err: any) {
         setError(err?.message || "Failed to load sessions");
@@ -45,3 +46,4 @@ export default function SessionList() {
     </div>
   );
 }
+//<Link to={/session/${s.id}}>View details</Link> → sends user to details page.

@@ -1,4 +1,5 @@
-// AI-GENERATED: basic routes for sessions
+// basic routes for sessions Responsibility: Provides navigation structure.
+// Uses React Router to switch between session list and details.
 import React from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import SessionList from "./components/SessionList.tsx";
