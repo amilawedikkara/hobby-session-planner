@@ -46,4 +46,13 @@ export async function getAttendeeCount(sessionId: string | number): Promise<{ co
   return res.json();
 }
 
-
+// create a session
+export async function createSession(payload: any) {
+  const res = await fetch(`${BASE_URL}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Failed to create session: ${res.status}`);
+  return res.json();
+}
