@@ -1,10 +1,15 @@
 //placeholder details page Responsibility: Show details of a single session.
 //Responsibility: Show details of a single session.
 
-
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getSessionById, joinSession, getAttendeeCount, type Session } from "../api";
+import {
+  getSessionById,
+  joinSession,
+  getAttendeeCount,
+  leaveSession,
+  type Session,
+} from "../api"; // ADD leaveSession import
 
 export default function SessionDetails() {
   const { id } = useParams(); // ai-gen marker: route param
@@ -12,7 +17,8 @@ export default function SessionDetails() {
 
   const [session, setSession] = useState<Session | null>(null);
   const [count, setCount] = useState<number>(0);
-  const [loading, setLoading] = useState(true);      // Week 5: loading state
+  const [loading, setLoading] = useState(true); // Week 5: loading state
+  const [leaveCode, setLeaveCode] = useState(""); // Week 6: leave attendance code
   const [error, setError] = useState<string | null>(null);
 
   // controlled input (Week 4)
@@ -40,7 +46,9 @@ export default function SessionDetails() {
       }
     }
     if (sessionId) load();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [sessionId]);
 
   async function handleJoin(e: React.FormEvent) {
@@ -62,6 +70,29 @@ export default function SessionDetails() {
       alert(err?.message || "Failed to join");
     }
   }
+  async function handleLeave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!leaveCode.trim()) {
+      alert("Please enter your attendance code.");
+      return;
+    }
+    try {
+      const result = await leaveSession(sessionId, leaveCode.trim());
+      if (!result.success) {
+        alert(result.message || "Invalid attendance code.");
+        setLeaveCode(""); // clear field even on invalid code
+        return;
+      }
+      alert("You have been removed from the session.");
+
+      // refresh count after leaving
+      const c = await getAttendeeCount(sessionId);
+      setCount(c.count);
+      setLeaveCode(""); // clear the input
+    } catch (err: any) {
+      alert(err?.message || "Failed to leave");
+    }
+  }
 
   // helper to format start_time nicely
   function formatDateTime(iso: string) {
@@ -79,7 +110,9 @@ export default function SessionDetails() {
 
   return (
     <div style={{ maxWidth: 700 }}>
-      <p><Link to="/">{`← Back to all sessions`}</Link></p>
+      <p>
+        <Link to="/">{`← Back to all sessions`}</Link>
+      </p>
 
       <h2>{session.title}</h2>
       {session.description && <p>{session.description}</p>}
@@ -90,13 +123,17 @@ export default function SessionDetails() {
 
       <p>
         <strong>Attending:</strong> {count}
-        {typeof session.max_participants === "number" && session.max_participants > 0
+        {typeof session.max_participants === "number" &&
+        session.max_participants > 0
           ? ` / ${session.max_participants}`
           : ""}
       </p>
 
       {/* Week 4: Controlled form (name) + Week 2: onSubmit event */}
-      <form onSubmit={handleJoin} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <form
+        onSubmit={handleJoin}
+        style={{ display: "flex", gap: 8, alignItems: "center" }}
+      >
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -105,6 +142,29 @@ export default function SessionDetails() {
         />
         <button type="submit">I’m going</button>
       </form>
+      <div>
+        <h3 style={{ margin: "8px 0" }}>Not going?</h3>
+        <p style={{ margin: 0, fontSize: 14, color: "#555" }}>
+          Enter your personal attendance code to cancel your spot.
+        </p>
+        <form
+          onSubmit={handleLeave}
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            marginTop: 8,
+          }}
+        >
+          <input
+            value={leaveCode}
+            onChange={(e) => setLeaveCode(e.target.value)}
+            placeholder="Attendance code"
+            aria-label="Attendance code"
+          />
+          <button type="submit">Not going</button>
+        </form>
+      </div>
     </div>
   );
 }

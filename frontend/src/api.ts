@@ -59,3 +59,22 @@ export async function createSession(payload: any) {
   if (!res.ok) throw new Error(`Failed to create session: ${res.status}`);
   return res.json();
 }
+//leave attendance helper
+// improved leaveSession with readable 404 handling
+export async function leaveSession(sessionId: string | number, attendanceCode: string) {
+  const res = await fetch(`${BASE_URL}/attendance/${sessionId}/leave/${attendanceCode}`, {
+    method: "DELETE",
+  });
+
+  if (res.status === 404) {
+    // backend says "Invalid attendance code"
+    return { success: false, message: "Invalid attendance code" };
+  }
+
+  if (!res.ok) {
+    // any other server error
+    throw new Error(`Failed to leave: ${res.status}`);
+  }
+
+  return res.json(); // normal success
+}

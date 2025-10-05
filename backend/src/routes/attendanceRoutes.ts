@@ -25,13 +25,24 @@ router.post("/:sessionId/join", async (req, res) => {
   }
 });
 
-/** Leave session (self): /attendance/:sessionId/leave/:code */
+/** Leave session (self): /attendance/:sessionId/leave/:code leave route that checks result*/
 router.delete("/:sessionId/leave/:code", async (req, res) => {
-  await query(`DELETE FROM attendance WHERE session_id=$1 AND attendance_code=$2`, [
-    req.params.sessionId,
-    req.params.code,
-  ]);
-  res.json({ success: true });
+  try {
+    const result = await query(
+      `DELETE FROM attendance WHERE session_id=$1 AND attendance_code=$2 RETURNING id`,
+      [req.params.sessionId, req.params.code]
+    );
+
+    if (result.rowCount === 0) {
+      // no attendee matched this code
+      return res.status(404).json({ success: false, message: "Invalid attendance code" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Leave error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 });
 
 /** Creator removes attendee: /attendance/:sessionId/remove/:attendanceCode?code=MGMT */
