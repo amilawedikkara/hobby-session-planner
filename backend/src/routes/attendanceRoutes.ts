@@ -1,40 +1,63 @@
-// AI-GENERATED: attendance join/leave/manage endpoints
+// attendance join/leave/manage endpoints
 import express from "express";
 import { query } from "../db";
 import { generateCode } from "../utils";
 
 const router = express.Router();
 
-/** Join session: returns attendance_code */
+// join route supports private_code lookup
 router.post("/:sessionId/join", async (req, res) => {
   try {
     const { attendee_name, attendee_email, attendee_phone } = req.body;
+    let { sessionId } = req.params;
+
+    // if sessionId is not a number, look up by private_code
+    if (isNaN(Number(sessionId))) {
+      const lookup = await query(`SELECT id FROM sessions WHERE private_code=$1`, [sessionId]);
+      if (lookup.rowCount === 0) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      sessionId = lookup.rows[0].id;
+    }
+
     const attendance_code = generateCode(12);
 
     const r = await query(
       `INSERT INTO attendance (session_id, attendee_name, attendee_email, attendee_phone, attendance_code)
        VALUES ($1,$2,$3,$4,$5)
        RETURNING id, session_id, attendee_name, attendance_code`,
-      [req.params.sessionId, attendee_name || null, attendee_email || null, attendee_phone || null, attendance_code]
+      [sessionId, attendee_name || null, attendee_email || null, attendee_phone || null, attendance_code]
     );
 
-    res.json(r.rows[0]); // ai-gen marker: return attendance code
+    res.json(r.rows[0]);
   } catch (err) {
     console.error("Join error:", err);
-    res.status(500).json({ error: "Could not join" });
+    res.status(500).json({ error: "Could not join session" });
   }
 });
 
+
 /** Leave session (self): /attendance/:sessionId/leave/:code leave route that checks result*/
+// leave route supports private_code lookup
 router.delete("/:sessionId/leave/:code", async (req, res) => {
   try {
+    let { sessionId, code } = req.params;
+
+    // if sessionId is not numeric, look up by private_code
+    if (isNaN(Number(sessionId))) {
+      const lookup = await query(`SELECT id FROM sessions WHERE private_code=$1`, [sessionId]);
+      if (lookup.rowCount === 0) {
+        return res.status(404).json({ success: false, message: "Session not found" });
+      }
+      sessionId = lookup.rows[0].id;
+    }
+
     const result = await query(
       `DELETE FROM attendance WHERE session_id=$1 AND attendance_code=$2 RETURNING id`,
-      [req.params.sessionId, req.params.code]
+      [sessionId, code]
     );
 
     if (result.rowCount === 0) {
-      // no attendee matched this code
       return res.status(404).json({ success: false, message: "Invalid attendance code" });
     }
 
@@ -44,6 +67,7 @@ router.delete("/:sessionId/leave/:code", async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 
 /** Creator removes attendee: /attendance/:sessionId/remove/:attendanceCode?code=MGMT */
 router.delete("/:sessionId/remove/:attendanceCode", async (req, res) => {
@@ -60,12 +84,31 @@ router.delete("/:sessionId/remove/:attendanceCode", async (req, res) => {
   res.json({ success: true });
 });
 
-/** Count attendees */
+
+// count attendees (works for both numeric ID or private code)
 router.get("/:sessionId/count", async (req, res) => {
-  const r = await query(`SELECT COUNT(*)::int AS count FROM attendance WHERE session_id=$1`, [
-    req.params.sessionId,
-  ]);
-  res.json(r.rows[0]); // { count: 3 }
+  try {
+    let sessionId = req.params.sessionId;
+
+    // if sessionId isn't a number, look it up by private_code
+    if (isNaN(Number(sessionId))) {
+      const lookup = await query(`SELECT id FROM sessions WHERE private_code=$1`, [sessionId]);
+      if (lookup.rowCount === 0) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      sessionId = lookup.rows[0].id; // use the numeric id
+    }
+
+    const r = await query(
+      `SELECT COUNT(*)::int AS count FROM attendance WHERE session_id=$1`,
+      [sessionId]
+    );
+
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error("Count error:", err);
+    res.status(500).json({ error: "Server error while counting attendees" });
+  }
 });
 
 export default router;

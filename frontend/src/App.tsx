@@ -64,6 +64,10 @@ export default function App() {
           - The SessionDetails component can access this id using useParams() hook
         */}
         <Route path="/session/:id" element={<SessionDetails />} />
+
+        <Route path="/session/by-code/:code" element={<SessionDetails />} />
+        {/*New route to handle attendance code access private sessions*/}
+
       
       </Routes>
     </div>

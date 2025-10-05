@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   getSessionById,
+  getSessionByCode,
   joinSession,
   getAttendeeCount,
   leaveSession,
@@ -12,8 +13,8 @@ import {
 } from "../api"; // ADD leaveSession import
 
 export default function SessionDetails() {
-  const { id } = useParams(); // ai-gen marker: route param
-  const sessionId = useMemo(() => id ?? "", [id]);
+  const { id, code } = useParams(); //  support both numeric ID and private code
+  const sessionId = useMemo(() => id ?? code ?? "", [id, code]);
 
   const [session, setSession] = useState<Session | null>(null);
   const [count, setCount] = useState<number>(0);
@@ -30,13 +31,21 @@ export default function SessionDetails() {
     async function load() {
       try {
         setLoading(true);
-        const [s, c] = await Promise.all([
-          getSessionById(sessionId),
-          getAttendeeCount(sessionId),
-        ]);
+        let sessionData;
+        if (id) {
+          // normal public session
+          sessionData = await getSessionById(sessionId);
+        } else if (code) {
+          // private session by code
+          sessionData = await getSessionByCode(sessionId);
+        }
+
+        // get attendee count (same for both)
+        const attendeeCount = await getAttendeeCount(sessionId);
+
         if (!ignore) {
-          setSession(s);
-          setCount(c.count);
+          setSession(sessionData);
+          setCount(attendeeCount.count);
           setError(null);
         }
       } catch (err: any) {
