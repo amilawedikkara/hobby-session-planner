@@ -10,7 +10,7 @@ export default function SessionList() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
+    (async () => { 
       try {
         const data = await getSessions();//Fetches data from the backend using getSessions() (from api.ts).
         setSessions(data);

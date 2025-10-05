@@ -9,13 +9,16 @@ export type Session = {
   start_time: string;                 // ISO date-time from backend
   max_participants?: number | null;
 };
+/*This defines the shape of data using TypeScript.
+ It's like a blueprint that says "every Session object will have these properties.
+ " This helps with type safety when working with the data in components.*/
 
 // Fallback to localhost, or use Vite env: VITE_API_URL
-const BASE_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:4000"; // ai-gen marker
+const BASE_URL = (import.meta as any).env?.VITE_API_URL || "http://localhost:4000"; //production backend URL
 
 export async function getSessions(): Promise<Session[]> {
   const res = await fetch(`${BASE_URL}/sessions`);
-  if (!res.ok) {
+  if (!res.ok) {// Handles error states (server errors, 404, etc.)
     throw new Error(`Failed to fetch sessions: ${res.status}`);
   }
   return res.json();
@@ -28,7 +31,7 @@ export async function getSessionById(id: string | number): Promise<Session> {
   return res.json();
 }
 
-//join a session, returns { attendance_code, ... }
+//join a session, returns { attendance_code, ... }//This would be called when a user submits a "Join Session" form
 export async function joinSession(sessionId: string | number, attendee_name: string) {
   const res = await fetch(`${BASE_URL}/attendance/${sessionId}/join`, {
     method: "POST",
