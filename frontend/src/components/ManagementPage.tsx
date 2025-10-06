@@ -1,6 +1,11 @@
 // AI-GENERATED: Management page (edit/delete/remove attendees)
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
+import {
+  useParams,
+  useSearchParams,
+  Link,
+  useNavigate,
+} from "react-router-dom";
 import {
   getManageView,
   updateSession,
@@ -37,55 +42,70 @@ export default function ManagementPage() {
     type: "public",
   });
 
-  useEffect(() => {
-    if (!mgmtCode || !idOrCode) return;
-    (async () => {
-      try {
-        setLoading(true);
-        const result = await getManageView(idOrCode, mgmtCode);
-        setData(result);
+  // unified data loader reused by useEffect and handleSave
+  async function loadData() {
+    try {
+      setLoading(true);
+      const result = await getManageView(idOrCode, mgmtCode);
+      setData(result);
 
-        const { date, time } = isoToDateTime(result.session.start_time);
-        setForm({
-          title: result.session.title || "",
-          description: result.session.description || "",
-          date,
-          time,
-          max_participants: result.session.max_participants ?? "",
-          type: result.session.type || "public",
-        });
+      const { date, time } = isoToDateTime(result.session.start_time);
+      setForm({
+        title: result.session.title || "",
+        description: result.session.description || "",
+        date,
+        time,
+        max_participants: result.session.max_participants ?? "",
+        type: result.session.type || "public",
+      });
 
-        setError(null);
-      } catch (err: any) {
-        setError(err?.message || "Failed to load management view");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [idOrCode, mgmtCode]);
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load management view");
+    } finally {
+      setLoading(false);
+    }
   }
 
+  // initial load when page first opens or mgmtCode changes
+  useEffect(() => {
+    if (mgmtCode && idOrCode) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idOrCode, mgmtCode]);
+
+  // improved handleSave: shows loading, saves, then reloads fresh data
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
     try {
       await updateSession(idOrCode, mgmtCode, {
         title: form.title,
         description: form.description,
         date: form.date,
         time: form.time,
-        max_participants: form.max_participants ? Number(form.max_participants) : null,
+        max_participants: form.max_participants
+          ? Number(form.max_participants)
+          : null,
         type: form.type,
       });
-      alert("Session updated.");
-      // refresh
-      const result = await getManageView(idOrCode, mgmtCode);
-      setData(result);
+
+      alert("✅ Session updated successfully!");
+      await loadData(); // refresh everything after save
     } catch (err: any) {
-      alert(err?.message || "Failed to update session");
+      alert(err?.message || "❌ Failed to update session.");
+    } finally {
+      setLoading(false);
     }
+  }
+
+  function handleChange(
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) {
+    setForm({ ...form, [e.target.name]: e.target.value });
   }
 
   async function handleRemove(attendanceCode: string) {
@@ -112,7 +132,9 @@ export default function ManagementPage() {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: 16 }}>
-      <p><Link to="/">{`← Back to all sessions`}</Link></p>
+      <p>
+        <Link to="/">{`← Back to all sessions`}</Link>
+      </p>
       <h2>Manage Session</h2>
 
       <div style={{ marginBottom: 12 }}>
@@ -135,23 +157,63 @@ export default function ManagementPage() {
       {error && <p style={{ color: "crimson" }}>Error: {error}</p>}
 
       {data && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
           {/* Edit form */}
-          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <form
+            onSubmit={handleSave}
+            style={{ display: "flex", flexDirection: "column", gap: 8 }}
+          >
             <h3>Edit session</h3>
-            <input name="title" value={form.title} onChange={handleChange} placeholder="Title" required />
-            <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description" />
-            <input type="date" name="date" value={form.date} onChange={handleChange} required />
-            <input type="time" name="time" value={form.time} onChange={handleChange} required />
-            <input type="number" name="max_participants" value={form.max_participants} onChange={handleChange} placeholder="Max participants" />
+            <input
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              placeholder="Title"
+              required
+            />
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              placeholder="Description"
+            />
+            <input
+              type="date"
+              name="date"
+              value={form.date}
+              onChange={handleChange}
+              required
+            />
+            <input
+              type="time"
+              name="time"
+              value={form.time}
+              onChange={handleChange}
+              required
+            />
+            <input
+              type="number"
+              name="max_participants"
+              value={form.max_participants}
+              onChange={handleChange}
+              placeholder="Max participants"
+            />
             <select name="type" value={form.type} onChange={handleChange}>
               <option value="public">Public</option>
               <option value="private">Private</option>
             </select>
 
             <div style={{ display: "flex", gap: 8 }}>
-              <button type="submit">Save changes</button>
-              <button type="button" onClick={handleDelete} style={{ background: "#c92c2c", color: "white" }}>
+              <button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save changes"}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                style={{ background: "#c92c2c", color: "white" }}
+              >
                 Delete session
               </button>
             </div>
@@ -165,12 +227,26 @@ export default function ManagementPage() {
             ) : (
               <ul style={{ listStyle: "none", padding: 0 }}>
                 {data.attendees.map((a: any) => (
-                  <li key={a.attendance_code} style={{ padding: "8px 0", borderBottom: "1px solid #eee" }}>
-                    <div><strong>{a.attendee_name || "(no name)"}</strong></div>
-                    {a.attendee_email && <div style={{ fontSize: 13 }}>{a.attendee_email}</div>}
-                    {a.attendee_phone && <div style={{ fontSize: 13 }}>{a.attendee_phone}</div>}
-                    <div style={{ fontSize: 12, color: "#555" }}>code: {a.attendance_code}</div>
-                    <button onClick={() => handleRemove(a.attendance_code)} style={{ marginTop: 6 }}>
+                  <li
+                    key={a.attendance_code}
+                    style={{ padding: "8px 0", borderBottom: "1px solid #eee" }}
+                  >
+                    <div>
+                      <strong>{a.attendee_name || "(no name)"}</strong>
+                    </div>
+                    {a.attendee_email && (
+                      <div style={{ fontSize: 13 }}>{a.attendee_email}</div>
+                    )}
+                    {a.attendee_phone && (
+                      <div style={{ fontSize: 13 }}>{a.attendee_phone}</div>
+                    )}
+                    <div style={{ fontSize: 12, color: "#555" }}>
+                      code: {a.attendance_code}
+                    </div>
+                    <button
+                      onClick={() => handleRemove(a.attendance_code)}
+                      style={{ marginTop: 6 }}
+                    >
                       Remove
                     </button>
                   </li>
