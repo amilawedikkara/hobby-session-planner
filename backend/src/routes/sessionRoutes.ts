@@ -75,31 +75,115 @@ router.get("/by-code/:code", async (req, res) => {
 });
 
 /** Management view: /sessions/:id/manage?code=XXXX */
+// AI-GENERATED: manage view supports numeric id OR private_code
 router.get("/:id/manage", async (req, res) => {
   const mgmt = String(req.query.code || "");
-  const s = await query(`SELECT * FROM sessions WHERE id=$1`, [req.params.id]);
-  const session = s.rows[0];
-  if (!session) return res.status(404).json({ error: "Not found" });
-  if (session.management_code !== mgmt) return res.status(403).json({ error: "Invalid management code" });
+  let { id } = req.params;
 
-  const attendees = await query(
-    `SELECT attendee_name, attendee_email, attendee_phone, attendance_code
-     FROM attendance WHERE session_id=$1`,
-    [req.params.id]
-  );
+  // detect private_code (non-numeric)
+  if (isNaN(Number(id))) {
+    const found = await query(`SELECT * FROM sessions WHERE private_code=$1`, [id]);
+    if (found.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    const session = found.rows[0];
+    if (session.management_code !== mgmt) return res.status(403).json({ error: "Invalid management code" });
 
-  res.json({ session, attendees: attendees.rows });
+    const attendees = await query(
+      `SELECT attendee_name, attendee_email, attendee_phone, attendance_code
+       FROM attendance WHERE session_id=$1`,
+      [session.id]
+    );
+    return res.json({ session, attendees: attendees.rows });
+  } else {
+    // numeric id
+    const s = await query(`SELECT * FROM sessions WHERE id=$1`, [id]);
+    const session = s.rows[0];
+    if (!session) return res.status(404).json({ error: "Not found" });
+    if (session.management_code !== mgmt) return res.status(403).json({ error: "Invalid management code" });
+
+    const attendees = await query(
+      `SELECT attendee_name, attendee_email, attendee_phone, attendance_code
+       FROM attendance WHERE session_id=$1`,
+      [id]
+    );
+    return res.json({ session, attendees: attendees.rows });
+  }
 });
+
 
 /** Delete session: /sessions/:id?code=XXXX */
+// AI-GENERATED: delete via mgmt code; supports id or private_code
 router.delete("/:id", async (req, res) => {
   const mgmt = String(req.query.code || "");
-  const s = await query(`SELECT management_code FROM sessions WHERE id=$1`, [req.params.id]);
-  if (s.rows.length === 0) return res.status(404).json({ error: "Not found" });
-  if (s.rows[0].management_code !== mgmt) return res.status(403).json({ error: "Invalid management code" });
+  let { id } = req.params;
 
-  await query(`DELETE FROM sessions WHERE id=$1`, [req.params.id]);
+  if (isNaN(Number(id))) {
+    const s = await query(`SELECT id, management_code FROM sessions WHERE private_code=$1`, [id]);
+    if (s.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    if (s.rows[0].management_code !== mgmt) return res.status(403).json({ error: "Invalid management code" });
+    await query(`DELETE FROM sessions WHERE id=$1`, [s.rows[0].id]);
+  } else {
+    const s = await query(`SELECT management_code FROM sessions WHERE id=$1`, [id]);
+    if (s.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    if (s.rows[0].management_code !== mgmt) return res.status(403).json({ error: "Invalid management code" });
+    await query(`DELETE FROM sessions WHERE id=$1`, [id]);
+  }
+
   res.json({ success: true });
 });
+
+// AI-GENERATED: update session (edit) via mgmt code; accepts either start_time OR date+time
+router.put("/:id", async (req, res) => {
+  const mgmt = String(req.query.code || "");
+  let { id } = req.params;
+
+  // resolve id if private_code provided
+  if (isNaN(Number(id))) {
+    const found = await query(`SELECT * FROM sessions WHERE private_code=$1`, [id]);
+    if (found.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    id = found.rows[0].id;
+    if (found.rows[0].management_code !== mgmt) return res.status(403).json({ error: "Invalid management code" });
+  } else {
+    const s = await query(`SELECT management_code FROM sessions WHERE id=$1`, [id]);
+    if (s.rowCount === 0) return res.status(404).json({ error: "Not found" });
+    if (s.rows[0].management_code !== mgmt) return res.status(403).json({ error: "Invalid management code" });
+  }
+
+  const {
+    title,
+    description,
+    start_time, // optional
+    date,       // optional
+    time,       // optional
+    max_participants,
+    type,       // 'public' | 'private'
+  } = req.body;
+
+  // compute final start_time
+  let finalStart = start_time;
+  if (!finalStart && date && time) finalStart = new Date(`${date}T${time}:00`).toISOString();
+
+  const result = await query(
+    `UPDATE sessions
+     SET title = COALESCE($1, title),
+         description = COALESCE($2, description),
+         start_time = COALESCE($3, start_time),
+         max_participants = COALESCE($4, max_participants),
+         type = COALESCE($5, type),
+         updated_at = now()
+     WHERE id = $6
+     RETURNING *`,
+    [
+      title ?? null,
+      description ?? null,
+      finalStart ?? null,
+      typeof max_participants === "number" ? max_participants : null,
+      type ?? null,
+      id,
+    ]
+  );
+
+  res.json(result.rows[0]);
+});
+
 
 export default router;
