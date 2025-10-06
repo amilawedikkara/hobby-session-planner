@@ -89,7 +89,13 @@ export default function CreateSession() {
 
       <form
         onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+        className="p-4 border rounded bg-light"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+          fontSize: "1rem",
+        }}
       >
         <input
           name="title"
@@ -97,124 +103,161 @@ export default function CreateSession() {
           onChange={handleChange}
           placeholder="Title"
           required
+          className="form-control form-control-lg"
         />
         <textarea
           name="description"
           value={form.description}
           onChange={handleChange}
           placeholder="Description"
+          className="form-control"
+          rows={3}
         />
-        <input
-          type="date"
-          name="date"
-          value={form.date}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="time"
-          name="time"
-          value={form.time}
-          onChange={handleChange}
-          required
-        />
+        <div className="row">
+          <div className="col">
+            <input
+              type="date"
+              name="date"
+              value={form.date}
+              onChange={handleChange}
+              required
+              className="form-control"
+            />
+          </div>
+          <div className="col">
+            <input
+              type="time"
+              name="time"
+              value={form.time}
+              onChange={handleChange}
+              required
+              className="form-control"
+            />
+          </div>
+        </div>
+
         <input
           type="number"
           name="max_participants"
           value={form.max_participants}
           onChange={handleChange}
           placeholder="Max participants"
+          className="form-control"
         />
-        <select name="type" value={form.type} onChange={handleChange}>
+        <select
+          name="type"
+          value={form.type}
+          onChange={handleChange}
+          className="form-select form-select-lg"
+        >
           <option value="public">Public</option>
           <option value="private">Private</option>
         </select>
-        <button type="submit">Create Session</button>
+        <button type="submit" className="btn btn-success btn-lg mt-2">
+          Create Session
+        </button>
       </form>
 
       {error && <p style={{ color: "crimson" }}>{error}</p>}
 
-      {result && (() => {
-  // AI-GENERATED: build links for both public/private sessions
-  const links = buildLinks(result as CreatedSession);
+      {result &&
+        (() => {
+          // AI-GENERATED: build links for both public/private sessions
+          const links = buildLinks(result as CreatedSession);
 
-  return (
-    <div style={{ marginTop: 16, padding: 12, border: "1px solid #ccc", borderRadius: 6, background: "#f6fff7" }}>
-      <p style={{ marginTop: 0, marginBottom: 8 }}>
-        <strong>Session created successfully!</strong>
-      </p>
+          return (
+            <div
+              style={{
+                marginTop: 16,
+                padding: 12,
+                border: "1px solid #ccc",
+                borderRadius: 6,
+                background: "#f6fff7",
+              }}
+            >
+              <p style={{ marginTop: 0, marginBottom: 8 }}>
+                <strong>Session created successfully!</strong>
+              </p>
 
-      <div style={{ marginBottom: 8 }}>
-        <div><strong>Management code:</strong></div>
-        <code>{result.management_code}</code>
-      </div>
+              <div style={{ marginBottom: 8 }}>
+                <div>
+                  <strong>Management code:</strong>
+                </div>
+                <code>{result.management_code}</code>
+              </div>
 
-      {/* AI-GENERATED: view link (public: /session/:id, private: /session/by-code/:code) */}
-      <div style={{ marginBottom: 10 }}>
-        <div>
-          <strong>{result.type === "private" ? "Private link:" : "View link:"}</strong>
-        </div>
+              {/* AI-GENERATED: view link (public: /session/:id, private: /session/by-code/:code) */}
+              <div style={{ marginBottom: 10 }}>
+                <div>
+                  <strong>
+                    {result.type === "private" ? "Private link:" : "View link:"}
+                  </strong>
+                </div>
 
-        {/* clickable relative link */}
-        <div style={{ marginBottom: 6 }}>
-          <a href={links.viewPath}>{links.viewPath}</a>
-        </div>
+                {/* clickable relative link */}
+                <div style={{ marginBottom: 6 }}>
+                  <a href={links.viewPath}>{links.viewPath}</a>
+                </div>
 
-        {/* absolute URL + Copy button */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            value={links.viewUrl}
-            readOnly
-            aria-label="View link (absolute)"
-            style={{ flex: 1, padding: "6px 8px" }}
-          />
-          <button
-            type="button"
-            onClick={() =>
-              navigator.clipboard
-                .writeText(links.viewUrl)
-                .then(() => setCopied("view"))
-                .catch(() => alert("Copy failed"))
-            }
-          >
-            Copy
-          </button>
-        </div>
-        {copied === "view" && (
-          <small style={{ color: "green" }}>Copied view link!</small>
-        )}
-      </div>
+                {/* absolute URL + Copy button */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={links.viewUrl}
+                    readOnly
+                    aria-label="View link (absolute)"
+                    style={{ flex: 1, padding: "6px 8px" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigator.clipboard
+                        .writeText(links.viewUrl)
+                        .then(() => setCopied("view"))
+                        .catch(() => alert("Copy failed"))
+                    }
+                  >
+                    Copy
+                  </button>
+                </div>
+                {copied === "view" && (
+                  <small style={{ color: "green" }}>Copied view link!</small>
+                )}
+              </div>
 
-      {/* AI-GENERATED: management link with one-click copy */}
-      <div>
-        <div><strong>Management link:</strong></div>
+              {/* AI-GENERATED: management link with one-click copy */}
+              <div>
+                <div>
+                  <strong>Management link:</strong>
+                </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-          <input
-            value={links.manageUrl}
-            readOnly
-            aria-label="Management link (absolute)"
-            style={{ flex: 1, padding: "6px 8px" }}
-          />
-          <button
-            type="button"
-            onClick={() =>
-              navigator.clipboard
-                .writeText(links.manageUrl)
-                .then(() => setCopied("manage"))
-                .catch(() => alert("Copy failed"))
-            }
-          >
-            Copy Management Link
-          </button>
-        </div>
-        {copied === "manage" && (
-          <small style={{ color: "green" }}>Copied management link!</small>
-        )}
-      </div>
-    </div>
-  );
-})()}
+                <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                  <input
+                    value={links.manageUrl}
+                    readOnly
+                    aria-label="Management link (absolute)"
+                    style={{ flex: 1, padding: "6px 8px" }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigator.clipboard
+                        .writeText(links.manageUrl)
+                        .then(() => setCopied("manage"))
+                        .catch(() => alert("Copy failed"))
+                    }
+                  >
+                    Copy Management Link
+                  </button>
+                </div>
+                {copied === "manage" && (
+                  <small style={{ color: "green" }}>
+                    Copied management link!
+                  </small>
+                )}
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 }

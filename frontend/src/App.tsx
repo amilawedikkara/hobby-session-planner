@@ -25,15 +25,17 @@ import ManagementPage from "./components/ManagementPage"; // Management (edit/de
 export default function App() {
   return (
     // Bootstrap container: centers and adds horizontal padding
-    <div className="container my-4">
+    <div className="container my-3">
       {/* 
         HEADER SECTION:
         - Displays app title and navigation buttons
         - Uses Bootstrap utilities: mb-4 (margin bottom), border-bottom, pb-2 (padding bottom)
       */}
-      <header className="mb-4 border-bottom pb-2 d-flex justify-content-between align-items-center">
+      <header className="navbar navbar-expand-lg navbar-light bg-light mb-4 p-3 rounded shadow-sm">
         {/* App title on the left */}
-        <h2 className="text-primary">🎨 Hobby Session Planner</h2>
+        <h2 className="navbar-brand text-primary m-0">
+          🎨 Hobby Session Planner
+        </h2>
 
         {/* 
           NAVIGATION LINKS:
@@ -48,7 +50,7 @@ export default function App() {
           </Link>
 
           {/* "Create Session" button → Form page */}
-          <Link to="/create" className="btn btn-primary">
+          <Link to="/create" className="btn btn-success">
             Create Session
           </Link>
         </nav>

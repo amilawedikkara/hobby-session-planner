@@ -118,60 +118,64 @@ export default function SessionDetails() {
   if (!session) return <p>Session not found.</p>;
 
   return (
-    <div style={{ maxWidth: 700 }}>
+    <div className="container my-4" style={{ maxWidth: 700 }}>
       <p>
-        <Link to="/">{`← Back to all sessions`}</Link>
+        <Link to="/" className="text-decoration-none"> {`← Back to all sessions`}</Link>
       </p>
+      <div className="card shadow-sm p-4">
+      <h3 className="text-primary mb-2">{session.title}</h3>
+      {session.description && <p className="text-muted">{session.description}</p>}
 
-      <h2>{session.title}</h2>
-      {session.description && <p>{session.description}</p>}
-
-      <p>
+      <p className="mb-1">
         <strong>When:</strong> {formatDateTime(session.start_time)}
       </p>
 
-      <p>
+      <p className="mb-3">
         <strong>Attending:</strong> {count}
         {typeof session.max_participants === "number" &&
         session.max_participants > 0
           ? ` / ${session.max_participants}`
           : ""}
       </p>
-
+          </div>
       {/* Week 4: Controlled form (name) + Week 2: onSubmit event */}
       <form
         onSubmit={handleJoin}
-        style={{ display: "flex", gap: 8, alignItems: "center" }}
+        className="mb-4"
       >
+         <label htmlFor="joinName" className="form-label fw-semibold">
+          Join this session
+        </label>
+        <div className="input-group">
         <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
-          aria-label="Your name"
+          id="joinName"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            aria-label="Your name"
+            className="form-control"
+            required
         />
-        <button type="submit">I’m going</button>
+        <button type="submit" className="btn btn-primary">I’m going</button>
+          </div>
       </form>
       <div>
-        <h3 style={{ margin: "8px 0" }}>Not going?</h3>
-        <p style={{ margin: 0, fontSize: 14, color: "#555" }}>
+         <h5 className="mt-3">Not going?</h5>
+        <p className="text-secondary small mb-2">
           Enter your personal attendance code to cancel your spot.
         </p>
-        <form
-          onSubmit={handleLeave}
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            marginTop: 8,
-          }}
-        >
+        <form onSubmit={handleLeave} className="input-group">
           <input
             value={leaveCode}
             onChange={(e) => setLeaveCode(e.target.value)}
             placeholder="Attendance code"
             aria-label="Attendance code"
+            className="form-control"
           />
-          <button type="submit">Not going</button>
+          
+          <button type="submit" className="btn btn-outline-danger">
+            Not going
+          </button>
         </form>
       </div>
     </div>
