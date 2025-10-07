@@ -123,22 +123,41 @@ router.delete("/:sessionId/leave/:code", async (req, res) => {
 });
 
 /** Creator removes attendee: /attendance/:sessionId/remove/:attendanceCode?code=MGMT */
-router.delete("/:sessionId/remove/:attendanceCode", async (req, res) => {
-  const mgmt = String(req.query.code || "");
-  const s = await query(`SELECT management_code FROM sessions WHERE id=$1`, [
-    req.params.sessionId,
-  ]);
-  if (s.rows.length === 0)
-    return res.status(404).json({ error: "Session not found" });
-  if (s.rows[0].management_code !== mgmt)
-    return res.status(403).json({ error: "Invalid management code" });
+// AI-GENERATED: creator removes attendee (supports both numeric ID and private code)
+router.delete("/:idOrCode/remove/:attendanceCode", async (req, res) => {
+  try {
+    const mgmt = String(req.query.code || "");
+    const { idOrCode, attendanceCode } = req.params;
 
-  await query(
-    `DELETE FROM attendance WHERE session_id=$1 AND attendance_code=$2`,
-    [req.params.sessionId, req.params.attendanceCode]
-  );
+    // 1️⃣ Resolve numeric session_id
+    let sessionRow;
+    if (/^\d+$/.test(idOrCode)) {
+      sessionRow = await query("SELECT id, management_code FROM sessions WHERE id=$1", [Number(idOrCode)]);
+    } else {
+      sessionRow = await query("SELECT id, management_code FROM sessions WHERE private_code=$1", [idOrCode]);
+    }
 
-  res.json({ success: true });
+    if (sessionRow.rows.length === 0)
+      return res.status(404).json({ error: "Session not found" });
+
+    const session = sessionRow.rows[0];
+    if (session.management_code !== mgmt)
+      return res.status(403).json({ error: "Invalid management code" });
+
+    // 2️⃣ Delete the attendee
+    const result = await query(
+      "DELETE FROM attendance WHERE session_id=$1 AND attendance_code=$2 RETURNING id",
+      [session.id, attendanceCode]
+    );
+
+    if (result.rowCount === 0)
+      return res.status(404).json({ error: "Attendee not found" });
+
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("Remove attendee error:", err.message || err);
+    res.status(500).json({ error: "Failed to remove attendee" });
+  }
 });
 
 /** Count attendees */
@@ -175,5 +194,46 @@ router.get("/:idOrCode/count", async (req, res) => {
     res.status(500).json({ error: "Failed to count attendees" });
   }
 });
+
+// AI-GENERATED: management view by session ID or private code
+router.get("/:idOrCode/manage", async (req, res) => {
+  try {
+    const { idOrCode } = req.params;
+    const mgmtCode = String(req.query.code || "");
+
+    // 1️⃣ Resolve session id
+    let session;
+    if (/^\d+$/.test(idOrCode)) {
+      // numeric public session
+      const result = await query("SELECT * FROM sessions WHERE id=$1", [Number(idOrCode)]);
+      if (result.rows.length === 0)
+        return res.status(404).json({ error: "Session not found" });
+      session = result.rows[0];
+    } else {
+      // private code (string)
+      const result = await query("SELECT * FROM sessions WHERE private_code=$1", [idOrCode]);
+      if (result.rows.length === 0)
+        return res.status(404).json({ error: "Session not found" });
+      session = result.rows[0];
+    }
+
+    // 2️⃣ Check management code
+    if (session.management_code !== mgmtCode)
+      return res.status(403).json({ error: "Invalid management code" });
+
+    // 3️⃣ Get attendees
+    const attendees = await query(
+      "SELECT * FROM attendance WHERE session_id=$1 ORDER BY created_at ASC",
+      [session.id]
+    );
+
+    // 4️⃣ Return combined data
+    res.json({ session, attendees: attendees.rows });
+  } catch (err: any) {
+    console.error("Manage error:", err.message || err);
+    res.status(500).json({ error: "Failed to load management view" });
+  }
+});
+
 
 export default router;
