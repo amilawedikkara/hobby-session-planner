@@ -8,13 +8,18 @@ import attendanceRoutes from "./routes/attendanceRoutes";
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_ORIGIN || "*",
+    credentials: true,
+  }
+));
 app.use(express.json());
 
 app.use("/sessions", sessionRoutes);
 app.use("/attendance", attendanceRoutes);
 
-const PORT = Number(process.env.PORT || 4000);
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`); // ai-gen marker: server started
+const PORT = Number(process.env.PORT) || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
 });
+
