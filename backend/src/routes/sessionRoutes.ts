@@ -2,6 +2,7 @@
 import express from "express";
 import { query } from "../db";
 import { generateCode, combineToISO } from "../utils";
+import { Request, Response } from "express";
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const router = express.Router();
  *  - start_time: ISO string (preferred)
  *  - OR date + time (for beginner-friendly frontend), converted to start_time
  */
-router.post("/", async (req, res) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const {
       title,
@@ -65,7 +66,7 @@ router.post("/", async (req, res) => {
 });
 
 /** List all public sessions */
-router.get("/", async (_req, res) => {
+router.get("/", async (_req: Request, res: Response) => {
   const result = await query(
     `SELECT id, title, description, start_time, max_participants
      FROM sessions
@@ -76,14 +77,14 @@ router.get("/", async (_req, res) => {
 });
 
 /** Get session by numeric id */
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req: Request, res: Response) => {
   const r = await query(`SELECT * FROM sessions WHERE id=$1`, [req.params.id]);
   if (r.rows.length === 0) return res.status(404).json({ error: "Not found" });
   res.json(r.rows[0]);
 });
 
 /** Get private session by private_code */
-router.get("/by-code/:code", async (req, res) => {
+router.get("/by-code/:code", async (req: Request, res: Response) => {
   const r = await query(`SELECT * FROM sessions WHERE private_code=$1`, [
     req.params.code,
   ]);
@@ -93,7 +94,7 @@ router.get("/by-code/:code", async (req, res) => {
 
 /** Management view: /sessions/:id/manage?code=XXXX */
 // AI-GENERATED: manage view supports numeric id OR private_code
-router.get("/:id/manage", async (req, res) => {
+router.get("/:id/manage", async (req: Request, res: Response) => {
   const mgmt = String(req.query.code || "");
   let { id } = req.params;
 
@@ -132,7 +133,7 @@ router.get("/:id/manage", async (req, res) => {
 });
 
 // management view for private session (access by private_code)
-router.get("/by-code/:code/manage", async (req, res) => {
+router.get("/by-code/:code/manage", async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const mgmt = String(req.query.code || "");
@@ -171,7 +172,7 @@ router.get("/by-code/:code/manage", async (req, res) => {
 
 /** Delete session: /sessions/:id?code=XXXX */
 // AI-GENERATED: delete via mgmt code; supports id or private_code
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   const mgmt = String(req.query.code || "");
   let { id } = req.params;
 
@@ -198,7 +199,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // AI-GENERATED: update session (edit) via mgmt code; accepts either start_time OR date+time
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req: Request, res: Response) => {
   const mgmt = String(req.query.code || "");
   let { id } = req.params;
 
@@ -259,7 +260,7 @@ router.put("/:id", async (req, res) => {
   res.json(result.rows[0]);
 });
 /** Update private session: /sessions/by-code/:code?code=MGMT_CODE */
-router.put("/by-code/:code", async (req, res) => {
+router.put("/by-code/:code", async (req: Request, res: Response) => {
   try {
     const privateCode = req.params.code;
     const mgmt = String(req.query.code || "");
@@ -317,7 +318,7 @@ router.put("/by-code/:code", async (req, res) => {
   }
 });
 /** Delete private session: /sessions/by-code/:code?code=MGMT_CODE */
-router.delete("/by-code/:code", async (req, res) => {
+router.delete("/by-code/:code", async (req: Request, res: Response) => {
   try {
     const privateCode = req.params.code;
     const mgmt = String(req.query.code || "");
