@@ -84,7 +84,7 @@ export async function leaveSession(
   const res = await fetch(
     `${BASE_URL}/attendance/${sessionId}/leave/${attendanceCode}`,
     {
-      method: "DELETE",
+      method: "POST",
     }
   );
 
@@ -100,38 +100,68 @@ export async function leaveSession(
 
   return res.json(); // normal success
 }
-// AI-GENERATED: management view
-export async function getManageView(sessionIdOrCode: string, mgmtCode: string) {
-  const res = await fetch(`${BASE_URL}/sessions/${sessionIdOrCode}/manage?code=${encodeURIComponent(mgmtCode)}`);
+
+// AI-GENERATED: unified getManageView that supports both public ID and private code
+export async function getManageView(idOrCode: string, mgmtCode: string) {
+  const isNumeric = /^\d+$/.test(idOrCode);
+  const url = isNumeric
+    ? `${BASE_URL}/sessions/${idOrCode}/manage?code=${mgmtCode}`
+    : `${BASE_URL}/sessions/by-code/${idOrCode}/manage?code=${mgmtCode}`;
+
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load manage view: ${res.status}`);
-  return res.json(); // { session, attendees: [...] }
+  return res.json();
 }
 
-// AI-GENERATED: update session
-export async function updateSession(sessionIdOrCode: string, mgmtCode: string, payload: any) {
-  const res = await fetch(`${BASE_URL}/sessions/${sessionIdOrCode}?code=${encodeURIComponent(mgmtCode)}`, {
+// AI-GENERATED: update session (handles public ID or private code)
+export async function updateSession(
+  idOrCode: string,
+  mgmtCode: string,
+  body: any
+) {
+  const isNumeric = /^\d+$/.test(idOrCode);
+  const url = isNumeric
+    ? `${BASE_URL}/sessions/${idOrCode}?code=${mgmtCode}`
+    : `${BASE_URL}/sessions/by-code/${idOrCode}?code=${mgmtCode}`;
+
+  const res = await fetch(url, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
+
   if (!res.ok) throw new Error(`Failed to update session: ${res.status}`);
   return res.json();
 }
 
 // AI-GENERATED: delete session
 export async function deleteSession(sessionIdOrCode: string, mgmtCode: string) {
-  const res = await fetch(`${BASE_URL}/sessions/${sessionIdOrCode}?code=${encodeURIComponent(mgmtCode)}`, {
-    method: "DELETE",
-  });
+  const res = await fetch(
+    `${BASE_URL}/sessions/${sessionIdOrCode}?code=${encodeURIComponent(
+      mgmtCode
+    )}`,
+    {
+      method: "DELETE",
+    }
+  );
   if (!res.ok) throw new Error(`Failed to delete session: ${res.status}`);
   return res.json(); // { success: true }
 }
 
 // AI-GENERATED: manager removes attendee
-export async function managerRemoveAttendee(sessionIdOrCode: string, mgmtCode: string, attendanceCode: string) {
-  const res = await fetch(`${BASE_URL}/attendance/${sessionIdOrCode}/remove/${attendanceCode}?code=${encodeURIComponent(mgmtCode)}`, {
-    method: "DELETE",
-  });
+export async function managerRemoveAttendee(
+  sessionIdOrCode: string,
+  mgmtCode: string,
+  attendanceCode: string
+) {
+  const res = await fetch(
+    `${BASE_URL}/attendance/${sessionIdOrCode}/remove/${attendanceCode}?code=${encodeURIComponent(
+      mgmtCode
+    )}`,
+    {
+      method: "DELETE",
+    }
+  );
   if (!res.ok) throw new Error(`Failed to remove attendee: ${res.status}`);
   return res.json(); // { success: true }
 }

@@ -8,6 +8,7 @@ const router = express.Router();
 // join route supports private_code lookup
 router.post("/:sessionId/join", async (req, res) => {
   try {
+    const { idOrCode } = req.params;
     const { attendee_name, attendee_email, attendee_phone } = req.body;
     let { sessionId } = req.params;
 
@@ -116,7 +117,11 @@ router.delete("/:sessionId/remove/:attendanceCode", async (req, res) => {
     [resolvedId, attendanceCode]
   );
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("Remove attendee error:", err.message || err);
+    res.status(500).json({ error: "Failed to remove attendee" });
+  }
 });
 
 // count attendees (works for both numeric ID or private code)

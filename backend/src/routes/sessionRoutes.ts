@@ -16,11 +16,11 @@ router.post("/", async (req, res) => {
     const {
       title,
       description,
-      start_time,         // optional if date+time provided
-      date,               // optional
-      time,               // optional
+      start_time, // optional if date+time provided
+      date, // optional
+      time, // optional
       max_participants,
-      type,               // 'public' | 'private'
+      type, // 'public' | 'private'
       creator_email,
       location,
       latitude,
@@ -29,7 +29,10 @@ router.post("/", async (req, res) => {
 
     // Build start_time
     const finalStart = start_time || combineToISO(date, time);
-    if (!finalStart) return res.status(400).json({ error: "start_time or (date + time) required" });
+    if (!finalStart)
+      return res
+        .status(400)
+        .json({ error: "start_time or (date + time) required" });
 
     const management_code = generateCode(12);
     const private_code = type === "private" ? generateCode(8) : null;
@@ -39,7 +42,19 @@ router.post("/", async (req, res) => {
         (title, description, start_time, max_participants, type, management_code, private_code, creator_email, location, latitude, longitude)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
-      [title, description, finalStart, max_participants ?? null, type, management_code, private_code, creator_email ?? null, location ?? null, latitude ?? null, longitude ?? null]
+      [
+        title,
+        description,
+        finalStart,
+        max_participants ?? null,
+        type,
+        management_code,
+        private_code,
+        creator_email ?? null,
+        location ?? null,
+        latitude ?? null,
+        longitude ?? null,
+      ]
     );
 
     res.json(result.rows[0]); // ai-gen marker: return created session
@@ -69,7 +84,9 @@ router.get("/:id", async (req, res) => {
 
 /** Get private session by private_code */
 router.get("/by-code/:code", async (req, res) => {
-  const r = await query(`SELECT * FROM sessions WHERE private_code=$1`, [req.params.code]);
+  const r = await query(`SELECT * FROM sessions WHERE private_code=$1`, [
+    req.params.code,
+  ]);
   if (r.rows.length === 0) return res.status(404).json({ error: "Not found" });
   res.json(r.rows[0]);
 });
