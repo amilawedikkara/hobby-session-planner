@@ -84,7 +84,7 @@ export async function leaveSession(
   const res = await fetch(
     `${BASE_URL}/attendance/${sessionId}/leave/${attendanceCode}`,
     {
-      method: "POST",
+      method: "DELETE",
     }
   );
 

@@ -8,7 +8,6 @@ const router = express.Router();
 // join route supports private_code lookup
 router.post("/:sessionId/join", async (req, res) => {
   try {
-    const { idOrCode } = req.params;
     const { attendee_name, attendee_email, attendee_phone } = req.body;
     let { sessionId } = req.params;
 
@@ -85,37 +84,38 @@ router.delete("/:sessionId/leave/:code", async (req, res) => {
 });
 
 /** Creator removes attendee: /attendance/:sessionId/remove/:attendanceCode?code=MGMT */
-// AI-GENERATED: creator removes attendee via mgmt code; supports id or private_code
 router.delete("/:sessionId/remove/:attendanceCode", async (req, res) => {
-  const mgmt = String(req.query.code || "");
-  let { sessionId, attendanceCode } = req.params;
+  try {
+    const mgmt = String(req.query.code || "");
+    let { sessionId, attendanceCode } = req.params;
 
-  // resolve id if private_code
-  let resolvedId = sessionId;
-  if (isNaN(Number(sessionId))) {
-    const found = await query(
-      `SELECT id, management_code FROM sessions WHERE private_code=$1`,
-      [sessionId]
+    // resolve id if private_code
+    let resolvedId = sessionId;
+    if (isNaN(Number(sessionId))) {
+      const found = await query(
+        `SELECT id, management_code FROM sessions WHERE private_code=$1`,
+        [sessionId]
+      );
+      if (found.rowCount === 0)
+        return res.status(404).json({ error: "Session not found" });
+      if (found.rows[0].management_code !== mgmt)
+        return res.status(403).json({ error: "Invalid management code" });
+      resolvedId = found.rows[0].id;
+    } else {
+      const s = await query(
+        `SELECT management_code FROM sessions WHERE id=$1`,
+        [sessionId]
+      );
+      if (s.rowCount === 0)
+        return res.status(404).json({ error: "Session not found" });
+      if (s.rows[0].management_code !== mgmt)
+        return res.status(403).json({ error: "Invalid management code" });
+    }
+
+    await query(
+      `DELETE FROM attendance WHERE session_id=$1 AND attendance_code=$2`,
+      [resolvedId, attendanceCode]
     );
-    if (found.rowCount === 0)
-      return res.status(404).json({ error: "Session not found" });
-    if (found.rows[0].management_code !== mgmt)
-      return res.status(403).json({ error: "Invalid management code" });
-    resolvedId = found.rows[0].id;
-  } else {
-    const s = await query(`SELECT management_code FROM sessions WHERE id=$1`, [
-      sessionId,
-    ]);
-    if (s.rowCount === 0)
-      return res.status(404).json({ error: "Session not found" });
-    if (s.rows[0].management_code !== mgmt)
-      return res.status(403).json({ error: "Invalid management code" });
-  }
-
-  await query(
-    `DELETE FROM attendance WHERE session_id=$1 AND attendance_code=$2`,
-    [resolvedId, attendanceCode]
-  );
 
     res.json({ success: true });
   } catch (err: any) {
@@ -129,7 +129,6 @@ router.get("/:sessionId/count", async (req, res) => {
   try {
     let sessionId = req.params.sessionId;
 
-    // if sessionId isn't a number, look it up by private_code
     if (isNaN(Number(sessionId))) {
       const lookup = await query(
         `SELECT id FROM sessions WHERE private_code=$1`,
@@ -138,7 +137,7 @@ router.get("/:sessionId/count", async (req, res) => {
       if (lookup.rowCount === 0) {
         return res.status(404).json({ error: "Session not found" });
       }
-      sessionId = lookup.rows[0].id; // use the numeric id
+      sessionId = lookup.rows[0].id;
     }
 
     const r = await query(
