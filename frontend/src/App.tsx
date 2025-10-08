@@ -9,7 +9,6 @@
 // -------------- IMPORTS --------------
 
 // React core library
-import React from "react";
 
 // React Router: client-side routing (SPA navigation)
 import { Routes, Route, Link } from "react-router-dom";
@@ -33,9 +32,7 @@ export default function App() {
       */}
       <header className="navbar navbar-expand-lg navbar-light bg-light mb-4 p-3 rounded shadow-sm">
         {/* App title on the left */}
-        <h2 className="navbar-brand text-primary m-0">
-          🎨 Hobby Session Planner
-        </h2>
+        <h2 className="navbar-brand text-primary m-0">Hobby Session Planner</h2>
 
         {/* 
           NAVIGATION LINKS:
