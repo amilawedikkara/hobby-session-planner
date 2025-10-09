@@ -38,10 +38,10 @@ const pool = new Pool({
     const result = await client.query("SELECT version()");
     console.log("PostgreSQL version:", result.rows[0].version);
     client.release();
-  } catch (error) {
-    console.error("❌ Database connection failed:");
-    console.error("Error message:", error.message);
-  }
+  } catch (error: any) {
+  console.error("❌ Database connection failed:");
+  console.error("Error message:", error.message || error);
+}
 })();
 
 
