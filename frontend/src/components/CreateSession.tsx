@@ -40,6 +40,9 @@ export default function CreateSession() {
     time: "",
     max_participants: "",
     type: "public",
+    location: "",
+    latitude: "",
+    longitude: "",
   });
 
   const [result, setResult] = useState<any>(null);
@@ -58,29 +61,43 @@ export default function CreateSession() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+try {
+  // ✅ Construct a clean payload with converted types
+  const payload = {
+    title: form.title,
+    description: form.description || null,
+    date: form.date,
+    time: form.time,
+    max_participants: form.max_participants
+      ? Number(form.max_participants)
+      : null,
+    type: form.type as "public" | "private",
+    location: form.location || null,
+    latitude:
+      form.latitude.trim() === "" ? null : Number(form.latitude),
+    longitude:
+      form.longitude.trim() === "" ? null : Number(form.longitude),
+  };
 
-    try {
-      const payload = {
-        ...form,
-        max_participants: form.max_participants
-          ? Number(form.max_participants)
-          : null,
-      };
-      const session = await createSession(payload);
-      setResult(session); // ai-gen marker: show success
-      setCopied(null);
+  const session = await createSession(payload);
+  setResult(session);
+  setCopied(null);
 
-      setForm({
-        title: "",
-        description: "",
-        date: "",
-        time: "",
-        max_participants: "",
-        type: "public",
-      });
-    } catch (err: any) {
-      setError(err?.message || "Failed to create session");
-    }
+  // ✅ Reset form
+  setForm({
+    title: "",
+    description: "",
+    date: "",
+    time: "",
+    max_participants: "",
+    type: "public",   // default option remains
+    location: "",
+    latitude: "",
+    longitude: "",
+  });
+} catch (err: any) {
+  setError(err?.message || "Failed to create session");
+}
   }
 
   return (
@@ -124,6 +141,41 @@ export default function CreateSession() {
               className="form-control"
             />
           </div>
+
+          {/* ✅ Location fields */}
+<input
+  name="location"
+  value={form.location}
+  onChange={handleChange}
+  placeholder="Location name (e.g., Helsinki Central Library)"
+  className="form-control"
+/>
+
+<div className="row">
+  <div className="col">
+    <input
+      type="number"
+      name="latitude"
+      value={form.latitude}
+      onChange={handleChange}
+      placeholder="Latitude (e.g., 60.1699)"
+      step="any"
+      className="form-control"
+    />
+  </div>
+  <div className="col">
+    <input
+      type="number"
+      name="longitude"
+      value={form.longitude}
+      onChange={handleChange}
+      placeholder="Longitude (e.g., 24.9384)"
+      step="any"
+      className="form-control"
+    />
+  </div>
+</div>
+
           <div className="col">
             <input
               type="time"
@@ -178,6 +230,16 @@ export default function CreateSession() {
               <p style={{ marginTop: 0, marginBottom: 8 }}>
                 <strong>Session created successfully!</strong>
               </p>
+              {/* ✅ Show location summary if available */}
+{result?.location && (
+  <div style={{ marginBottom: 8 }}>
+    <strong>Location:</strong> {result.location}
+    {typeof result.latitude === "number" && typeof result.longitude === "number" && (
+      <span> — ({result.latitude}, {result.longitude})</span>
+    )}
+  </div>
+)}
+
 
               <div style={{ marginBottom: 8 }}>
                 <div>

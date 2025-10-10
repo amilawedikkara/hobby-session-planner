@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import sessionRoutes from "./routes/sessionRoutes";
 import attendanceRoutes from "./routes/attendanceRoutes";
+import { pool } from "./db";
+
 
 dotenv.config();
 
@@ -23,14 +25,7 @@ import { Pool } from "pg";
 console.log("🚀 Starting backend...");
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30000,
-});
-
-// Test DB connection
+// Test DB connection (reuse shared pool)
 (async () => {
   try {
     const client = await pool.connect();
@@ -39,14 +34,12 @@ const pool = new Pool({
     console.log("PostgreSQL version:", result.rows[0].version);
     client.release();
   } catch (error: any) {
-  console.error("❌ Database connection failed:");
-  console.error("Error message:", error.message || error);
-}
+    console.error("❌ Database connection failed:");
+    console.error("Error message:", error.message || error);
+  }
 })();
 
-
-const PORT = Number(process.env.PORT) || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+const PORT = Number(process.env.PORT) || 4000;
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
-

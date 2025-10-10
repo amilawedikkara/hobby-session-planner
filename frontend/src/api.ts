@@ -6,7 +6,9 @@ export type Session = {
   id: number;
   title: string;
   description?: string | null;
-  start_time: string; // ISO date-time from backend
+  start_time: string;
+  latitude?: number;
+  longitude?: number;
   max_participants?: number | null;
 };
 /*This defines the shape of data using TypeScript.
@@ -66,15 +68,34 @@ export async function getAttendeeCount(
 }
 
 // create a session
-export async function createSession(payload: any) {
+// Type definition for creating a new session
+export type CreateSessionPayload = {
+  title: string;
+  description?: string | null;
+  date?: string;
+  time?: string;
+  max_participants?: number | null;
+  type: "public" | "private";
+  location?: string | null; 
+  latitude?: number | null;
+  longitude?: number | null; 
+};
+
+// Create a new session (POST /sessions)
+export async function createSession(payload: CreateSessionPayload) {
   const res = await fetch(`${BASE_URL}/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`Failed to create session: ${res.status}`);
+
+  if (!res.ok) {
+    throw new Error(`Failed to create session: ${res.status}`);
+  }
+
   return res.json();
 }
+
 //leave attendance helper
 // improved leaveSession with readable 404 handling
 export async function leaveSession(
