@@ -11,21 +11,20 @@ import {
   leaveSession,
   type Session,
 } from "../api"; // ADD leaveSession import
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMapEvents, Popup } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+// Safe wrapper for TileLayer to avoid TS props complaints on React 19 + RL v5
+type SafeTileLayerProps = React.ComponentProps<typeof TileLayer> & {
+  attribution?: string;
+};
+const SafeTileLayer: React.FC<SafeTileLayerProps> = (props) => <TileLayer {...props} />;
+
 
 // Default fallback: Helsinki
 const DEFAULT_POSITION: [number, number] = [60.1699, 24.9384];
 const DEFAULT_ZOOM = 13;
-
-// Fix for React 19 + react-leaflet type mismatches
-type SafeTileLayerProps = React.ComponentProps<typeof TileLayer> & {
-  attribution?: string;
-};
-const SafeTileLayer: React.FC<SafeTileLayerProps> = (props) => (
-  <TileLayer {...props} />
-);
 
 export default function SessionDetails() {
   const { id, code } = useParams(); //  support both numeric ID and private code
